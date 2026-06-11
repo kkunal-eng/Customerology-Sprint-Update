@@ -56,7 +56,7 @@
             </button>
         </div>
         
-        <!-- Sidebar Navigation Items - Wrapped inner flex spans to guarantee aligned icons/text nodes -->
+        <!-- Sidebar Navigation Items -->
         <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center justify-between px-4 py-3 bg-indigo-600/10 text-indigo-400 font-semibold rounded-xl hover:bg-indigo-600/20 transition-all">
                 <span class="flex items-center gap-3"><i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard</span>
@@ -525,6 +525,27 @@
         </div>
     </div>
 
+    <!-- Workload Task List Modal -->
+    <div id="workloadTaskListModal" class="fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4 hidden backdrop-blur-sm transition-all duration-300">
+        <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl border border-slate-100 overflow-hidden transform scale-95 transition-all duration-300 flex flex-col max-h-[80vh]">
+            <div id="workload-modal-header-color" class="p-5 border-b border-slate-100 flex items-center justify-between bg-indigo-50 text-indigo-700 transition-colors">
+                <div>
+                    <h3 id="workload-modal-title" class="text-lg font-bold">Tasks</h3>
+                    <p id="workload-modal-assignee" class="text-xs font-semibold mt-0.5 opacity-80">Assignee Name</p>
+                </div>
+                <button onclick="closeWorkloadTaskList()" class="p-1.5 rounded-full hover:bg-black/10 transition-all text-current">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="workload-modal-list" class="flex-1 overflow-y-auto p-2 bg-slate-50/50">
+                <!-- Dynamically populated -->
+            </div>
+            <div class="p-4 bg-white border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                <button onclick="closeWorkloadTaskList()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition-all">Close Window</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Hidden input element for optional background file triggers -->
     <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden">
 
@@ -909,7 +930,7 @@
                 });
             }
 
-            // --- CHART 3: Priority Hierarchy (Polar Area) ---
+            // --- CHART 3: Priority Hierarchy (Doughnut) ---
             const priorityCounts = { 'Highest': 0, 'Medium': 0, 'Lowest': 0 };
             filteredTasks.forEach(t => {
                 const p = t.priority;
@@ -929,7 +950,7 @@
                 const ctxPriority = canvasPriority.getContext('2d');
 
                 priorityChartObj = new Chart(ctxPriority, {
-                    type: 'polarArea',
+                    type: 'doughnut',
                     data: {
                         labels: priorityLabels,
                         datasets: [{
@@ -958,9 +979,6 @@
                                 font: { family: chartFontFamily, size: 10, weight: 'bold' },
                                 formatter: (value) => value
                             }
-                        },
-                        scales: {
-                            r: { grid: { color: '#f1f5f9' }, ticks: { display: false } }
                         }
                     }
                 });
@@ -1145,18 +1163,18 @@
                             </div>
                         </div>
 
-                        <div class="space-y-2 mt-4 text-xs font-semibold text-slate-600 border-t border-slate-100 pt-4">
-                            <div class="flex justify-between">
+                        <div class="space-y-1 mt-4 text-xs font-semibold text-slate-600 border-t border-slate-100 pt-4">
+                            <div class="flex justify-between items-center cursor-pointer hover:bg-emerald-50 p-1.5 -mx-1.5 rounded-lg transition-colors" onclick="openWorkloadTaskList('${worker.name.replace(/'/g, "\\'")}', 'completed')">
                                 <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Completed</span>
-                                <span class="text-slate-800 font-bold">${worker.completed}</span>
+                                <span class="text-slate-800 font-bold bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">${worker.completed}</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between items-center cursor-pointer hover:bg-amber-50 p-1.5 -mx-1.5 rounded-lg transition-colors" onclick="openWorkloadTaskList('${worker.name.replace(/'/g, "\\'")}', 'pending')">
                                 <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> In Progress</span>
-                                <span class="text-slate-800 font-bold">${worker.pending}</span>
+                                <span class="text-slate-800 font-bold bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">${worker.pending}</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between items-center cursor-pointer hover:bg-purple-50 p-1.5 -mx-1.5 rounded-lg transition-colors" onclick="openWorkloadTaskList('${worker.name.replace(/'/g, "\\'")}', 'review')">
                                 <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-500"></span> Peer Review</span>
-                                <span class="text-slate-800 font-bold">${worker.codeReview}</span>
+                                <span class="text-slate-800 font-bold bg-white px-2 py-0.5 rounded shadow-sm border border-slate-100">${worker.codeReview}</span>
                             </div>
                         </div>
                     </div>
@@ -1291,6 +1309,95 @@
                     modal.classList.add('hidden');
                 }, 150);
             }
+        }
+
+        // Open Workload Task List Modal
+        function openWorkloadTaskList(assigneeName, category) {
+            const workerTasks = filteredTasks.filter(t => {
+                const name = t.assignee || 'Unassigned Tasks';
+                return name === assigneeName;
+            });
+
+            let displayTasks = [];
+            let statusTitle = "";
+            let colorClass = "";
+
+            // Evaluate statuses to categorize dynamically
+            if (category === 'completed') {
+                displayTasks = workerTasks.filter(t => ['ready to deploy', 'done', 'completed'].includes(t.status.toLowerCase()));
+                statusTitle = "Completed Tasks";
+                colorClass = "text-emerald-700 bg-emerald-50 border-b border-emerald-100";
+            } else if (category === 'review') {
+                displayTasks = workerTasks.filter(t => ['code review', 'peer review', 'testing'].includes(t.status.toLowerCase()));
+                statusTitle = "Peer Review Tasks";
+                colorClass = "text-purple-700 bg-purple-50 border-b border-purple-100";
+            } else {
+                displayTasks = workerTasks.filter(t => !['ready to deploy', 'done', 'completed', 'code review', 'peer review', 'testing'].includes(t.status.toLowerCase()));
+                statusTitle = "In Progress / Pending Tasks";
+                colorClass = "text-amber-700 bg-amber-50 border-b border-amber-100";
+            }
+
+            const mTitle = document.getElementById('workload-modal-title');
+            const mAssignee = document.getElementById('workload-modal-assignee');
+            const mList = document.getElementById('workload-modal-list');
+            const mHeader = document.getElementById('workload-modal-header-color');
+
+            if (mTitle) mTitle.innerText = statusTitle;
+            if (mAssignee) mAssignee.innerText = assigneeName;
+            
+            if (mHeader) {
+                mHeader.className = `p-5 flex items-center justify-between transition-colors ${colorClass}`;
+            }
+
+            if (mList) {
+                mList.innerHTML = '';
+                if (displayTasks.length === 0) {
+                    mList.innerHTML = '<p class="text-sm text-slate-500 italic p-6 text-center">No active tasks found in this category.</p>';
+                } else {
+                    displayTasks.forEach(t => {
+                        mList.innerHTML += `
+                            <div class="p-4 border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-md cursor-pointer transition-all bg-white m-2 rounded-xl" onclick="closeWorkloadTaskList(); openTaskDetailsByObj('${t.key}')">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-mono font-bold text-indigo-600">${t.key}</span>
+                                    <span class="text-[10px] bg-slate-100 border border-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wide">${t.status}</span>
+                                </div>
+                                <p class="text-sm font-semibold text-slate-800 leading-snug">${t.summary}</p>
+                            </div>
+                        `;
+                    });
+                }
+            }
+
+            const modal = document.getElementById('workloadTaskListModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    if (modal.firstElementChild) {
+                        modal.firstElementChild.classList.remove('scale-95');
+                        modal.firstElementChild.classList.add('scale-100');
+                    }
+                }, 50);
+            }
+        }
+
+        // Close Workload Task List Modal
+        function closeWorkloadTaskList() {
+            const modal = document.getElementById('workloadTaskListModal');
+            if (modal) {
+                if (modal.firstElementChild) {
+                    modal.firstElementChild.classList.remove('scale-100');
+                    modal.firstElementChild.classList.add('scale-95');
+                }
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 150);
+            }
+        }
+
+        // Helper function to connect Team Workload to Task Details panel
+        function openTaskDetailsByObj(key) {
+             const task = tasks.find(t => t.key === key);
+             if(task) openTaskDetails(task);
         }
 
         // Export Data Back to Standard CSV format
