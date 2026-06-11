@@ -84,7 +84,7 @@
         <div class="p-4 border-t border-slate-800 flex items-center gap-3 bg-slate-950/20">
             <img src="https://placehold.co/40x40/4f46e5/ffffff?text=PM" alt="PM Profile" class="w-10 h-10 rounded-full border-2 border-indigo-500/30">
             <div class="overflow-hidden">
-                <p class="text-sm font-bold text-white truncate">Francis Ramos/Kunal Kishore</p>
+                <p class="text-sm font-bold text-white truncate">Francis/Kunal</p>
                 <p class="text-xs text-slate-400 truncate">Lead Project Manager</p>
             </div>
         </div>
@@ -272,7 +272,7 @@
                 </div>
 
                 <!-- Kanban Grid Columns -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 overflow-x-auto min-w-[800px] pb-4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6 overflow-x-auto min-w-[1000px] pb-4">
                     <!-- COLUMN 1: TO DO / OPEN -->
                     <div class="bg-slate-100/70 p-4 rounded-2xl border border-slate-200/80 flex flex-col min-h-[450px]">
                         <div class="flex items-center justify-between mb-3 border-b border-slate-200 pb-2">
@@ -312,7 +312,20 @@
                         </div>
                     </div>
 
-                    <!-- COLUMN 4: READY TO DEPLOY / DONE -->
+                    <!-- COLUMN 4: QA / TESTING -->
+                    <div class="bg-cyan-50/20 p-4 rounded-2xl border border-cyan-100 flex flex-col min-h-[450px]">
+                        <div class="flex items-center justify-between mb-3 border-b border-cyan-100 pb-2">
+                            <span class="flex items-center gap-2 font-bold text-sm text-cyan-700">
+                                <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> QA / Testing
+                            </span>
+                            <span class="bg-cyan-100 text-cyan-700 font-extrabold text-[11px] px-2 py-0.5 rounded-full" id="count-kanban-qa">0</span>
+                        </div>
+                        <div id="kanban-qa-list" class="space-y-3 flex-1 overflow-y-auto max-h-[500px]">
+                            <!-- Dynamic Cards -->
+                        </div>
+                    </div>
+
+                    <!-- COLUMN 5: READY TO DEPLOY / DONE -->
                     <div class="bg-emerald-50/20 p-4 rounded-2xl border border-emerald-100 flex flex-col min-h-[450px]">
                         <div class="flex items-center justify-between mb-3 border-b border-emerald-100 pb-2">
                             <span class="flex items-center gap-2 font-bold text-sm text-emerald-700">
@@ -1049,16 +1062,18 @@
             const listTodo = document.getElementById('kanban-todo-list');
             const listProgress = document.getElementById('kanban-progress-list');
             const listReview = document.getElementById('kanban-review-list');
+            const listQa = document.getElementById('kanban-qa-list');
             const listDone = document.getElementById('kanban-done-list');
 
-            if (!listTodo || !listProgress || !listReview || !listDone) return;
+            if (!listTodo || !listProgress || !listReview || !listQa || !listDone) return;
 
             listTodo.innerHTML = '';
             listProgress.innerHTML = '';
             listReview.innerHTML = '';
+            listQa.innerHTML = '';
             listDone.innerHTML = '';
 
-            let cTodo = 0, cProgress = 0, cReview = 0, cDone = 0;
+            let cTodo = 0, cProgress = 0, cReview = 0, cQa = 0, cDone = 0;
 
             filteredTasks.forEach(t => {
                 const card = document.createElement('div');
@@ -1097,9 +1112,12 @@
                 } else if (['in progress', 'development'].includes(statusLower)) {
                     listProgress.appendChild(card);
                     cProgress++;
-                } else if (['code review', 'peer review', 'testing'].includes(statusLower)) {
+                } else if (['code review', 'peer review'].includes(statusLower)) {
                     listReview.appendChild(card);
                     cReview++;
+                } else if (['qa', 'testing', 'in qa', 'ready for qa'].includes(statusLower)) {
+                    listQa.appendChild(card);
+                    cQa++;
                 } else if (['ready to deploy', 'done', 'completed'].includes(statusLower)) {
                     listDone.appendChild(card);
                     cDone++;
@@ -1109,12 +1127,14 @@
             const lblTodo = document.getElementById('count-kanban-todo');
             const lblProgress = document.getElementById('count-kanban-progress');
             const lblReview = document.getElementById('count-kanban-review');
+            const lblQa = document.getElementById('count-kanban-qa');
             const lblDone = document.getElementById('count-kanban-done');
             const lblTotal = document.getElementById('kanban-total-counter');
 
             if (lblTodo) lblTodo.innerText = cTodo;
             if (lblProgress) lblProgress.innerText = cProgress;
             if (lblReview) lblReview.innerText = cReview;
+            if (lblQa) lblQa.innerText = cQa;
             if (lblDone) lblDone.innerText = cDone;
             if (lblTotal) lblTotal.innerText = `${filteredTasks.length} Active Board Items`;
         }
